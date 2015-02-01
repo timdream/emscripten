@@ -1327,9 +1327,11 @@ mergeInto(LibraryManager.library, {
 
       FS.nameTable = new Array(4096);
 
-      // XXX: #if this
+#if ROOT_IDBFS
       FS.mount(IDBFS, {}, '/');
-      //FS.mount(MEMFS, {}, '/');
+#else
+      FS.mount(MEMFS, {}, '/');
+#endif
 
       FS.createDefaultDirectories();
       FS.createDefaultDevices();
@@ -1714,6 +1716,7 @@ mergeInto(LibraryManager.library, {
         function finish(byteArray) {
           if (!dontCreateFile) {
             FS.createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
+            // Preloaded files shouldn't be synced into IndexedDB unless modified.
             IDBFS.addSyncBlacklistEntry(fullname);
           }
           if (onload) onload();

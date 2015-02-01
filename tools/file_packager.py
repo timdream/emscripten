@@ -30,6 +30,8 @@ Usage:
 
   --use-preload-cache Stores package in IndexedDB so that subsequent loads don't need to do XHR. Checks package version.
 
+  --syncfs-before-start Sync the filesystem before start. Useful when ROOT_IDBFS is turned on.
+
   --no-heap-copy If specified, the preloaded filesystem is not copied inside the Emscripten HEAP, but kept in a separate typed array outside it.
                  The default, if this is not specified, is to embed the VFS inside the HEAP, so that mmap()ing files in it is a no-op.
                  Passing this flag optimizes for fread() usage, omitting it optimizes for mmap() usage.
@@ -78,9 +80,11 @@ crunch = 0
 plugins = []
 jsoutput = None
 force = True
-# If set to True, IndexedDB (IDBFS in library_idbfs.js) is used to locally cache VFS XHR so that subsequent 
+# If set to True, IndexedDB database named EM_PRELOAD_CACHE is used to locally cache VFS XHR so that subsequent
 # page loads can read the data from the offline cache instead.
 use_preload_cache = False
+# If set to true, FS.sync(true) will be called during startup.
+syncfs_before_start = False
 # If set to True, the blob received from XHR is moved to the Emscripten HEAP, optimizing for mmap() performance.
 # If set to False, the XHR blob is kept intact, and fread()s etc. are performed directly to that data. This optimizes for minimal memory usage and fread() performance.
 no_heap_copy = True
@@ -103,6 +107,8 @@ for arg in sys.argv[2:]:
   elif arg == '--use-preload-cache':
     use_preload_cache = True
     leading = ''
+  elif arg == '--syncfs-before-start':
+    syncfs_before_start = True
   elif arg == '--no-heap-copy':
     no_heap_copy = False
     leading = ''
@@ -464,8 +470,7 @@ if has_preloaded:
     if file_['mode'] == 'preload':
       use_data += '          DataRequest.prototype.requests["%s"].onload();\n' % (escape_for_js_string(file_['dstpath']))
 
-  # XXX: need a switch here
-  if True:
+  if syncfs_before_start:
     use_data += "          Module['addRunDependency']('syncfs_%s');\n" % data_target
     use_data += "          FS.syncfs(true, function() { Module['removeRunDependency']('syncfs_%s'); });\n" % data_target
 
