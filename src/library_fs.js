@@ -1327,7 +1327,9 @@ mergeInto(LibraryManager.library, {
 
       FS.nameTable = new Array(4096);
 
-      FS.mount(MEMFS, {}, '/');
+      // XXX: #if this
+      FS.mount(IDBFS, {}, '/');
+      //FS.mount(MEMFS, {}, '/');
 
       FS.createDefaultDirectories();
       FS.createDefaultDevices();
@@ -1712,6 +1714,7 @@ mergeInto(LibraryManager.library, {
         function finish(byteArray) {
           if (!dontCreateFile) {
             FS.createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
+            IDBFS.addSyncBlacklistEntry(fullname);
           }
           if (onload) onload();
           removeRunDependency('cp ' + fullname);

@@ -463,6 +463,12 @@ if has_preloaded:
   for file_ in data_files:
     if file_['mode'] == 'preload':
       use_data += '          DataRequest.prototype.requests["%s"].onload();\n' % (escape_for_js_string(file_['dstpath']))
+
+  # XXX: need a switch here
+  if True:
+    use_data += "          Module['addRunDependency']('syncfs_%s');\n" % data_target
+    use_data += "          FS.syncfs(true, function() { Module['removeRunDependency']('syncfs_%s'); });\n" % data_target
+
   use_data += "          Module['removeRunDependency']('datafile_%s');\n" % data_target
 
   if Compression.on:

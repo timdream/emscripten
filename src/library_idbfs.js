@@ -15,6 +15,11 @@ mergeInto(LibraryManager.library, {
       // reuse all of the core MEMFS functionality
       return MEMFS.mount.apply(null, arguments);
     },
+    blacklist: {},
+    addSyncBlacklistEntry: function(path) {
+      var stat = FS.stat(path);
+      IDBFS.blacklist[path] = { timestamp: stat.mtime };
+    },
     syncfs: function(mount, populate, callback) {
       IDBFS.getLocalSet(mount, function(err, local) {
         if (err) return callback(err);
@@ -93,6 +98,11 @@ mergeInto(LibraryManager.library, {
 
         if (FS.isDir(stat.mode)) {
           check.push.apply(check, FS.readdir(path).filter(isRealDir).map(toAbsolute(path)));
+        }
+
+        if (!FS.isFile(stat.mode)) {
+          // Ignore non-file entries.
+          continue;
         }
 
         entries[path] = { timestamp: stat.mtime };
@@ -203,7 +213,9 @@ mergeInto(LibraryManager.library, {
       Object.keys(src.entries).forEach(function (key) {
         var e = src.entries[key];
         var e2 = dst.entries[key];
-        if (!e2 || e.timestamp > e2.timestamp) {
+        if ((!e2 || e.timestamp > e2.timestamp) &&
+            (!IDBFS.blacklist[key] ||
+              e.timestamp > IDBFS.blacklist[key].timestamp)) {
           create.push(key);
           total++;
         }
@@ -213,7 +225,7 @@ mergeInto(LibraryManager.library, {
       Object.keys(dst.entries).forEach(function (key) {
         var e = dst.entries[key];
         var e2 = src.entries[key];
-        if (!e2) {
+        if (!e2 && !IDBFS.blacklist[key]) {
           remove.push(key);
           total++;
         }
