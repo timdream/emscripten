@@ -361,6 +361,7 @@ var FS_LOG = 0; // Log all FS operations.  This is especially helpful when you'r
 var CASE_INSENSITIVE_FS = 0; // If set to nonzero, the provided virtual filesystem if treated case-insensitive, like
                              // Windows and OSX do. If set to 0, the VFS is case-sensitive, like on Linux.
 var ROOT_IDBFS = 0; // Use IDBFS as root filesystem. Useful when you want to presist the entire filesystem.
+var AUTO_SYNCFS = 0; // Call FS.syncfs() after write-op from time to time automatically.
 var MEMFS_APPEND_TO_TYPED_ARRAYS = 0; // If set to nonzero, MEMFS will always utilize typed arrays as the backing store
                                       // for appending data to files. The default behavior is to use typed arrays for files
                                       // when the file size doesn't change after initial creation, and for files that do

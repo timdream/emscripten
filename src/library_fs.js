@@ -753,6 +753,9 @@ mergeInto(LibraryManager.library, {
         // changed its name)
         FS.hashAddNode(old_node);
       }
+#if AUTO_SYNCFS
+      FS.setAutoSyncfs();
+#endif
       try {
         if (FS.trackingDelegate['onMovePath']) FS.trackingDelegate['onMovePath'](old_path, new_path);
       } catch(e) {
@@ -783,6 +786,9 @@ mergeInto(LibraryManager.library, {
       }
       parent.node_ops.rmdir(parent, name);
       FS.destroyNode(node);
+#if AUTO_SYNCFS
+      FS.setAutoSyncfs();
+#endif
       try {
         if (FS.trackingDelegate['onDeletePath']) FS.trackingDelegate['onDeletePath'](path);
       } catch(e) {
@@ -823,6 +829,9 @@ mergeInto(LibraryManager.library, {
       }
       parent.node_ops.unlink(parent, name);
       FS.destroyNode(node);
+#if AUTO_SYNCFS
+      FS.setAutoSyncfs();
+#endif
       try {
         if (FS.trackingDelegate['onDeletePath']) FS.trackingDelegate['onDeletePath'](path);
       } catch(e) {
@@ -1122,6 +1131,9 @@ mergeInto(LibraryManager.library, {
       }
       var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
       if (!seeking) stream.position += bytesWritten;
+#if AUTO_SYNCFS
+      FS.setAutoSyncfs();
+#endif
       try {
         if (stream.path && FS.trackingDelegate['onWriteToFile']) FS.trackingDelegate['onWriteToFile'](stream.path);
       } catch(e) {
@@ -1743,6 +1755,37 @@ mergeInto(LibraryManager.library, {
       } else {
         processData(url);
       }
+    },
+
+    //
+    // auto-syncfs
+    //
+#if AUTO_SYNCFS
+    AUTO_SYNCFS: true,
+#endif
+    AUTO_SYNCFS_TIMEOUT_MS: 1000,
+    autoSyncfsTimer: undefined,
+    autoSyncfsPostRunHookAdded: false,
+    setAutoSyncfs: function() {
+      if (!FS.AUTO_SYNCFS) {
+        return;
+      }
+
+      if (!FS.autoSyncfsPostRunHookAdded) {
+        FS.autoSyncfsPostRunHookAdded = true;
+        Module['addOnExit'](function() {
+          FS.syncfs(function(e) {
+            if (e) { throw e }
+          });
+        });
+      }
+
+      clearTimeout(FS.autoSyncfsTimer);
+      FS.autoSyncfsTimer = window.setTimeout(function() {
+        FS.syncfs(function(e) {
+          if (e) { throw e }
+        });
+      }, FS.AUTO_SYNCFS_TIMEOUT_MS);
     },
 
     //
